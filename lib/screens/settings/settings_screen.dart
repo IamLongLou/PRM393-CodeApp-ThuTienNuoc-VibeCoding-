@@ -11,6 +11,130 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _autoSync = true;
   bool _biometric = false;
+  String _userName = 'Nguyen Van A';
+  String _staffId = 'NV-2024-001';
+
+  void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: _userName);
+    final idController = TextEditingController(text: _staffId);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Chỉnh sửa hồ sơ', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Họ và tên', hintText: 'Nhập tên mới'),
+            ),
+            const SizedBox(height: 15),
+            TextField(
+              controller: idController,
+              decoration: const InputDecoration(labelText: 'Mã nhân viên', hintText: 'Nhập mã mới'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _userName = nameController.text;
+                _staffId = idController.text;
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cập nhật hồ sơ thành công!')));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+            child: const Text('Lưu thay đổi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Đổi mật khẩu', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(obscureText: true, decoration: InputDecoration(labelText: 'Mật khẩu cũ')),
+            SizedBox(height: 10),
+            TextField(obscureText: true, decoration: InputDecoration(labelText: 'Mật khẩu mới')),
+            SizedBox(height: 10),
+            TextField(obscureText: true, decoration: InputDecoration(labelText: 'Xác nhận mật khẩu')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Hủy', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đổi mật khẩu thành công!')));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, foregroundColor: Colors.white),
+            child: const Text('Cập nhật'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showHelpCenter() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(25))),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (context, scrollController) => Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(child: Container(width: 40, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
+              const SizedBox(height: 20),
+              const Text('Trung tâm hỗ trợ', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView(
+                  controller: scrollController,
+                  children: [
+                    _buildHelpItem(Icons.question_answer_outlined, 'Hướng dẫn sử dụng máy in Bluetooth'),
+                    _buildHelpItem(Icons.sync_problem, 'Lỗi không đồng bộ được dữ liệu'),
+                    _buildHelpItem(Icons.history_edu, 'Cách tra cứu lịch sử thu tiền'),
+                    _buildHelpItem(Icons.phone_in_talk_outlined, 'Gọi hotline kỹ thuật: 1900 1234'),
+                    const Divider(height: 40),
+                    const Text('Các câu hỏi thường gặp', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    const SizedBox(height: 10),
+                    const Text('1. Tôi phải làm gì nếu app bị treo khi đang thu tiền?'),
+                    const Text('Hãy thử xóa bộ nhớ đệm trong phần cài đặt hoặc khởi động lại ứng dụng.', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHelpItem(IconData icon, String title) => ListTile(
+    leading: Icon(icon, color: Colors.blue),
+    title: Text(title, style: const TextStyle(fontSize: 14)),
+    trailing: const Icon(Icons.chevron_right, size: 18),
+    onTap: () {},
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Switch(
                   value: _autoSync,
                   onChanged: (v) => setState(() => _autoSync = v),
-                  activeColor: Colors.blue,
+                  activeThumbColor: Colors.blue,
                 ),
               ),
               const Divider(height: 1, indent: 60),
@@ -75,7 +199,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 title: 'Clear Cache',
                 subtitle: 'Current usage: 24.5 MB',
                 trailing: TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Đã xóa bộ nhớ đệm!')));
+                  },
                   child: const Text('CLEAR', style: TextStyle(fontWeight: FontWeight.bold)),
                 ),
               ),
@@ -83,6 +209,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             _buildSectionTitle('SECURITY'),
             _buildSettingsGroup([
               _buildSettingItem(
+                onTap: _showChangePasswordDialog,
                 icon: Icons.lock_outline,
                 title: 'Change Password',
                 trailing: const Icon(Icons.chevron_right, color: Colors.grey),
@@ -94,7 +221,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 trailing: Switch(
                   value: _biometric,
                   onChanged: (v) => setState(() => _biometric = v),
-                  activeColor: Colors.blue,
+                  activeThumbColor: Colors.blue,
                 ),
               ),
             ]),
@@ -107,6 +234,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(height: 1, indent: 60),
               _buildSettingItem(
+                onTap: _showHelpCenter,
                 icon: Icons.help_outline,
                 title: 'Help Center',
                 trailing: const Icon(Icons.chevron_right, color: Colors.grey),
@@ -139,7 +267,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           )
@@ -149,7 +277,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         children: [
           Align(
             alignment: Alignment.topRight,
-            child: Icon(Icons.edit_outlined, size: 20, color: Colors.grey[600]),
+            child: InkWell(
+              onTap: _showEditProfileDialog,
+              child: Icon(Icons.edit_outlined, size: 20, color: Colors.grey[600]),
+            ),
           ),
           Center(
             child: Column(
@@ -175,9 +306,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text(
-                      'Nguyen Van A',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    Text(
+                      _userName,
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -192,7 +323,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Staff ID: NV-2024-001',
+                  'Staff ID: $_staffId',
                   style: TextStyle(color: Colors.grey[500], fontSize: 13),
                 ),
               ],
@@ -224,7 +355,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.1)),
+        border: Border.all(color: Colors.grey.withOpacity(0.1)),
       ),
       child: Column(children: children),
     );
@@ -235,13 +366,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String title,
     String? subtitle,
     required Widget trailing,
+    VoidCallback? onTap,
   }) {
     return ListTile(
+      onTap: onTap,
       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.blue.withValues(alpha: 0.05),
+          color: Colors.blue.withOpacity(0.05),
           shape: BoxShape.circle,
         ),
         child: Icon(icon, color: const Color(0xFF2196F3), size: 22),

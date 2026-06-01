@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../providers/customer_provider.dart';
 import '../../routes/app_routes.dart';
 
 class StatisticsScreen extends StatefulWidget {
@@ -11,173 +13,163 @@ class StatisticsScreen extends StatefulWidget {
 }
 
 class _StatisticsScreenState extends State<StatisticsScreen> {
-  int _selectedCustomerIndex = 0;
+  int _selectedCustomerId = 1; // Mặc định chọn khách hàng đầu tiên (ID: 1)
   
-  // Dữ liệu giả lập cho từng khách hàng
-  final List<Map<String, dynamic>> _customerData = [
-    {
-      'name': 'A',
-      'totalConsumption': '42.5',
-      'totalCost': '510.000',
-      'avgConsumption': '14.2',
-      'lastReading': '15/10',
-      'chartData': [12.0, 15.0, 18.0, 14.0, 16.0, 14.5],
-    },
-    {
-      'name': 'B',
-      'totalConsumption': '38.2',
-      'totalCost': '458.400',
-      'avgConsumption': '12.7',
-      'lastReading': '16/10',
-      'chartData': [10.0, 12.0, 14.0, 13.0, 15.0, 13.5],
-    },
-    {
-      'name': 'C',
-      'totalConsumption': '55.0',
-      'totalCost': '660.000',
-      'avgConsumption': '18.3',
-      'lastReading': '17/10',
-      'chartData': [15.0, 18.0, 22.0, 19.0, 21.0, 20.0],
-    },
-    {
-      'name': 'D',
-      'totalConsumption': '29.4',
-      'totalCost': '352.800',
-      'avgConsumption': '9.8',
-      'lastReading': '18/10',
-      'chartData': [8.0, 9.0, 11.0, 10.0, 12.0, 10.5],
-    },
-    {
-      'name': 'E',
-      'totalConsumption': '48.1',
-      'totalCost': '577.200',
-      'avgConsumption': '16.0',
-      'lastReading': '19/10',
-      'chartData': [13.0, 16.0, 19.0, 17.0, 18.0, 17.5],
-    },
-  ];
+  // Dữ liệu giả lập biểu đồ cho từng khách hàng để minh họa logic thay đổi
+  final Map<int, List<double>> _mockChartData = {
+    1: [12.0, 15.0, 18.0, 14.0, 16.0, 14.5],
+    2: [10.0, 12.0, 14.0, 13.0, 15.0, 13.5],
+    3: [15.0, 18.0, 22.0, 19.0, 21.0, 20.0],
+    4: [8.0, 9.0, 11.0, 10.0, 12.0, 10.5],
+    5: [13.0, 16.0, 19.0, 17.0, 18.0, 17.5],
+  };
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
     final String updateTime = DateFormat('HH:mm, dd/MM/yyyy').format(now);
-    final data = _customerData[_selectedCustomerIndex];
-
+    
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         title: const Text('Thống kê'),
         actions: [IconButton(icon: const Icon(Icons.search), onPressed: () {})],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text('Khách hàng gần đây', style: TextStyle(fontWeight: FontWeight.bold)),
-                  const Icon(Icons.search, size: 18, color: Colors.grey),
-                ],
-              ),
-            ),
-            _buildAvatarList(),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Tổng quan: Khách hàng ${data['name']}', 
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)
-                        ),
-                        Text('Cập nhật lúc $updateTime', 
-                          style: const TextStyle(color: Colors.grey, fontSize: 11)
-                        ),
-                      ],
-                    ),
+      body: Consumer<CustomerProvider>(
+        builder: (context, provider, child) {
+          final customers = provider.allCustomers;
+          if (customers.isEmpty) return const Center(child: Text('Không có dữ liệu khách hàng.'));
+          
+          // Lấy thông tin khách hàng đang được chọn
+          final selectedCustomer = customers.firstWhere((c) => c.id == _selectedCustomerId, orElse: () => customers.first);
+          final chartData = _mockChartData[selectedCustomer.id] ?? [10, 10, 10, 10, 10, 10];
+
+          return SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Khách hàng gần đây', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Icon(Icons.search, size: 18, color: Colors.grey),
+                    ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.check_circle_outline, size: 12, color: Colors.grey),
-                        SizedBox(width: 4),
-                        Text('Đã đồng bộ', style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  )
-                ],
-              ),
+                ),
+                
+                // 1. Danh sách Avatar lấy từ CustomerProvider
+                SizedBox(
+                  height: 110,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
+                    itemCount: customers.length,
+                    itemBuilder: (context, i) {
+                      final customer = customers[i];
+                      bool isSelected = _selectedCustomerId == customer.id;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedCustomerId = customer.id!),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          child: Column(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected ? Colors.blue : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: CircleAvatar(
+                                  radius: 28,
+                                  backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=${customer.id}'),
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              SizedBox(
+                                width: 70,
+                                child: Text(
+                                  customer.name.split(' ').last, // Hiển thị tên (ví dụ: Long, Anh, Giang...)
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 11, 
+                                    color: isSelected ? Colors.blue : Colors.black, 
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Tổng quan: ${selectedCustomer.name}', 
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)
+                            ),
+                            Text('Cập nhật lúc $updateTime', 
+                              style: const TextStyle(color: Colors.grey, fontSize: 11)
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.check_circle_outline, size: 12, color: Colors.grey),
+                            SizedBox(width: 4),
+                            Text('Đã đồng bộ', style: TextStyle(color: Colors.grey, fontSize: 9, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+
+                // 2. Grid thông số thay đổi theo khách hàng được chọn
+                _buildInfoGrid(selectedCustomer),
+                
+                // 3. Biểu đồ thay đổi theo khách hàng
+                _buildChartSection(chartData),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: Text('Lịch sử ghi gần đây', style: TextStyle(fontWeight: FontWeight.bold)),
+                ),
+                _recentItem('${selectedCustomer.currentReading} m³', 'Hôm nay, 10:30', '120.000đ'),
+                _recentItem('${(selectedCustomer.currentReading - 15)} m³', '15/09/2023', '144.000đ'),
+                const SizedBox(height: 50),
+              ],
             ),
-            _buildInfoGrid(data),
-            _buildChartSection(data),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text('Lịch sử ghi gần đây', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
-            _recentItem('${data['totalConsumption']} m³', data['lastReading'] + '/2023', '${data['totalCost']}đ'),
-            _recentItem('12.0 m³', '15/09/2023', '144.000đ'),
-            const SizedBox(height: 50),
-          ],
-        ),
+          );
+        },
       ),
       bottomNavigationBar: _buildBottomNav(context),
     );
   }
 
-  Widget _buildAvatarList() {
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 15),
-        itemCount: _customerData.length,
-        itemBuilder: (context, i) {
-          bool isSelected = _selectedCustomerIndex == i;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCustomerIndex = i),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isSelected ? Colors.blue : Colors.transparent,
-                        width: 2,
-                      ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 28,
-                      backgroundImage: NetworkImage('https://i.pravatar.cc/150?u=$i'),
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(_customerData[i]['name'], 
-                    style: TextStyle(
-                      fontSize: 12, 
-                      color: isSelected ? Colors.blue : Colors.black, 
-                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal
-                    )
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildInfoGrid(Map<String, dynamic> data) {
+  Widget _buildInfoGrid(dynamic customer) {
+    // Logic tính toán giả lập dựa trên chỉ số hiện tại của khách hàng
+    String totalCost = NumberFormat.currency(locale: 'vi_VN', symbol: '').format(customer.currentReading * 12000);
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10),
       child: GridView.count(
@@ -186,10 +178,10 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         crossAxisCount: 2,
         childAspectRatio: 1.6,
         children: [
-          _statCard(Icons.water_drop_outlined, 'Tổng tiêu thụ', data['totalConsumption'], 'M³'),
-          _statCard(Icons.attach_money, 'Tổng chi phí', data['totalCost'], 'VND'),
-          _statCard(Icons.trending_up, 'Trung bình/tháng', data['avgConsumption'], 'M³'),
-          _statCard(Icons.calendar_today, 'Lần ghi cuối', data['lastReading'], '2023'),
+          _statCard(Icons.water_drop_outlined, 'Tổng tiêu thụ', '${customer.currentReading}', 'M³'),
+          _statCard(Icons.attach_money, 'Tổng chi phí', totalCost, 'VND'),
+          _statCard(Icons.trending_up, 'Trung bình/tháng', '${(customer.currentReading / 12).toStringAsFixed(1)}', 'M³'),
+          _statCard(Icons.calendar_today, 'Mã khách hàng', customer.code, ''),
         ],
       ),
     );
@@ -222,7 +214,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
           Text(label, style: const TextStyle(color: Colors.grey, fontSize: 10)),
           Row(
             children: [
-              Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15), overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 4),
               Text(unit, style: const TextStyle(color: Colors.grey, fontSize: 9)),
             ],
@@ -232,8 +224,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
     );
   }
 
-  Widget _buildChartSection(Map<String, dynamic> data) {
-    List<double> chartPoints = data['chartData'];
+  Widget _buildChartSection(List<double> chartPoints) {
     return Container(
       margin: const EdgeInsets.all(20),
       padding: const EdgeInsets.all(20),
@@ -341,7 +332,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
 
   Widget _buildBottomNav(BuildContext context) => BottomNavigationBar(
     type: BottomNavigationBarType.fixed,
-    currentIndex: 1, // Stats is usually at index 1 in this nav bar
+    currentIndex: 1,
     selectedItemColor: Colors.blue,
     unselectedItemColor: Colors.grey,
     onTap: (index) {

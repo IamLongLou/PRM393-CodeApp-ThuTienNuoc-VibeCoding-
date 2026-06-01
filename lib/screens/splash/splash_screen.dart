@@ -146,9 +146,10 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 ),
                 const SizedBox(height: 50),
                 const Text(
-                  'WATER BILLING',
+                  'LONG LOU\nWATER PAYMENT BLING BLING',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 28,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     letterSpacing: 2,
@@ -198,8 +199,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                 const SizedBox(height: 20),
                 const Text('Vui lòng đợi trong giây lát...', style: TextStyle(color: Colors.white70)),
                 const Spacer(flex: 2),
-                const Text('PHÁT TRIỂN BỞI CÔNG TY TNHH LONG LOU', style: TextStyle(fontSize: 10, color: Colors.white60)),
-                const Text('Phiên bản 2.4.0 - © 2024 Water Billing Corp', style: TextStyle(fontSize: 10, color: Colors.white60)),
+                const Text(
+                  'PHÁT TRIỂN BỞI CÔNG TY TNHH LONG LOU',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const Text(
+                  'Phiên bản 2.4.0 - © 2024 Water Billing Corp',
+                  style: TextStyle(fontSize: 10, color: Colors.white70),
+                ),
                 const SizedBox(height: 30),
               ],
             ),
