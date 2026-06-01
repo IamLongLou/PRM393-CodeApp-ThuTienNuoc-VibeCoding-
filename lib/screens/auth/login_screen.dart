@@ -32,9 +32,14 @@ class _LoginScreenState extends State<LoginScreen> {
               padding: const EdgeInsets.all(30),
               child: Card(
                 elevation: 8,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 40,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -83,8 +88,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelText: "Mật khẩu",
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
-                            icon: Icon(_obscureText ? Icons.visibility : Icons.visibility_off),
-                            onPressed: () => setState(() => _obscureText = !_obscureText),
+                            icon: Icon(
+                              _obscureText
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                            onPressed: () =>
+                                setState(() => _obscureText = !_obscureText),
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -99,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 55,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.pushReplacementNamed(context, "/home");
+                            Navigator.pushNamed(context, "/home");
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Theme.of(context).primaryColor,
@@ -108,7 +118,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           child: const Text(
                             "ĐĂNG NHẬP",
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
@@ -116,7 +129,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextButton(
                         onPressed: () {},
                         child: const Text("Quên mật khẩu?"),
-                      )
+                      ),
                     ],
                   ),
                 ),
