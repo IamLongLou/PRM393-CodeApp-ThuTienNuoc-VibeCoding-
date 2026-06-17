@@ -13,19 +13,6 @@ IF OBJECT_ID(N'dbo.customers', N'U') IS NOT NULL DROP TABLE dbo.customers;
 IF OBJECT_ID(N'dbo.app_users', N'U') IS NOT NULL DROP TABLE dbo.app_users;
 GO
 
-CREATE TABLE dbo.app_users (
-    id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_app_users PRIMARY KEY,
-    username NVARCHAR(50) NOT NULL CONSTRAINT uq_app_users_username UNIQUE,
-    password_hash NVARCHAR(100) NOT NULL,
-    full_name NVARCHAR(150) NOT NULL,
-    role VARCHAR(20) NOT NULL,
-    email NVARCHAR(150) NULL,
-    phone NVARCHAR(30) NULL,
-    created_at DATETIME2 NOT NULL CONSTRAINT df_app_users_created_at DEFAULT SYSUTCDATETIME(),
-    updated_at DATETIME2 NULL,
-    CONSTRAINT ck_app_users_role CHECK (role IN ('ADMIN', 'STAFF', 'USER'))
-);
-
 CREATE TABLE dbo.customers (
     id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_customers PRIMARY KEY,
     code NVARCHAR(30) NOT NULL CONSTRAINT uq_customers_code UNIQUE,
@@ -39,6 +26,23 @@ CREATE TABLE dbo.customers (
     CONSTRAINT ck_customers_current_reading CHECK (current_reading >= 0),
     CONSTRAINT ck_customers_status CHECK (status IN ('PENDING', 'READING', 'COMPLETED'))
 );
+
+CREATE TABLE dbo.app_users (
+    id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_app_users PRIMARY KEY,
+    username NVARCHAR(50) NOT NULL CONSTRAINT uq_app_users_username UNIQUE,
+    password_hash NVARCHAR(100) NOT NULL,
+    full_name NVARCHAR(150) NOT NULL,
+    role VARCHAR(20) NOT NULL,
+    email NVARCHAR(150) NULL,
+    phone NVARCHAR(30) NULL,
+    customer_id BIGINT NULL,
+    created_at DATETIME2 NOT NULL CONSTRAINT df_app_users_created_at DEFAULT SYSUTCDATETIME(),
+    updated_at DATETIME2 NULL,
+    CONSTRAINT ck_app_users_role CHECK (role IN ('ADMIN', 'STAFF', 'USER')),
+    CONSTRAINT fk_app_users_customers FOREIGN KEY (customer_id) REFERENCES dbo.customers(id) ON DELETE SET NULL
+);
+
+
 
 CREATE TABLE dbo.bills (
     id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT pk_bills PRIMARY KEY,
@@ -122,5 +126,26 @@ INSERT INTO dbo.bills (id, customer_id, bill_code, bill_date, old_reading, new_r
 SET IDENTITY_INSERT dbo.bills OFF;
 GO
 
--- AppUser rows are intentionally created by Spring Boot DataInitializer
--- so passwords are stored as BCrypt hashes instead of plain text.
+-- Insert AppUsers directly so all data is in one place
+-- Mật khẩu mặc định cho tất cả các tài khoản dưới đây là: 123456
+SET IDENTITY_INSERT dbo.app_users ON;
+INSERT INTO dbo.app_users (id, username, password_hash, full_name, role, email, phone, customer_id) VALUES
+(1, N'admin', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Quản Trị Viên', 'ADMIN', N'admin@water.com', N'0987654321', NULL),
+(2, N'nhanvien01', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Nguyễn Văn A', 'STAFF', N'nguyenvana@gmail.com', N'0912345678', NULL),
+(3, N'khachhang01', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Lưu Bị', 'USER', N'kh01@gmail.com', N'0912345001', 1),
+(4, N'khachhang02', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Quan Vũ', 'USER', N'kh02@gmail.com', N'0987654002', 2),
+(5, N'khachhang03', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Trương Phi', 'USER', N'kh03@gmail.com', N'0904444003', 3),
+(6, N'khachhang04', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Gia Cát Lượng', 'USER', N'kh04@gmail.com', N'0911222004', 4),
+(7, N'khachhang05', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Tào Tháo', 'USER', N'kh05@gmail.com', N'0933555005', 5),
+(8, N'khachhang06', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Tôn Quyền', 'USER', N'kh06@gmail.com', N'0944006006', 6),
+(9, N'khachhang07', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Triệu Vân', 'USER', N'kh07@gmail.com', N'0944007007', 7),
+(10, N'khachhang08', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Chu Du', 'USER', N'kh08@gmail.com', N'0944008008', 8),
+(11, N'khachhang09', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Lữ Bố', 'USER', N'kh09@gmail.com', N'0944009009', 9),
+(12, N'khachhang10', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Điêu Thuyền', 'USER', N'kh10@gmail.com', N'0944010010', 10),
+(13, N'khachhang11', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Tư Mã Ý', 'USER', N'kh11@gmail.com', N'0944011011', 11),
+(14, N'khachhang12', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Hạ Hầu Đôn', 'USER', N'kh12@gmail.com', N'0944012012', 12),
+(15, N'khachhang13', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Hứa Chử', 'USER', N'kh13@gmail.com', N'0944013013', 13),
+(16, N'khachhang14', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Trương Liêu', 'USER', N'kh14@gmail.com', N'0944014014', 14),
+(17, N'khachhang15', N'$2a$10$exR8o08Ra0/4vrl7ey2w3ezL0SxflYWmmrQ6DM9jWL572yLdQwhM6', N'Hoàng Trung', 'USER', N'kh15@gmail.com', N'0944015015', 15);
+SET IDENTITY_INSERT dbo.app_users OFF;
+GO

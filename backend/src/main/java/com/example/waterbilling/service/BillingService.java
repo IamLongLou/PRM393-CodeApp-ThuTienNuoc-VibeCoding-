@@ -29,14 +29,17 @@ public class BillingService {
         this.customerService = customerService;
     }
 
+    @Transactional(readOnly = true)
     public List<BillDto> getAll() {
         return billRepository.findAllByOrderByDateDesc().stream().map(BillDto::from).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<BillDto> getByCustomer(Long customerId) {
         return billRepository.findByCustomerIdOrderByDateDesc(customerId).stream().map(BillDto::from).toList();
     }
 
+    @Transactional(readOnly = true)
     public List<BillDto> getUnsynced() {
         return billRepository.findBySyncedFalseOrderByDateDesc().stream().map(BillDto::from).toList();
     }

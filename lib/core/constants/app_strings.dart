@@ -1,5 +1,5 @@
 class AppStrings {
-  static const String appName = 'Thu tiền Nước';
+  static const String appName = 'WaterBills';
   static const String companyName = 'Công ty TNHH KHCN Rồng Nước Biết Bơi';
   static const String groupName = 'Thuộc tập đoàn công nghiệp nặng Long Lou';
   static const String loginSuccess = 'Đăng nhập thành công!';
