@@ -14,7 +14,9 @@ public record UserDto(
         @Schema(description = "Email người dùng.", example = "admin@water.com")
         String email,
         @Schema(description = "Số điện thoại người dùng.", example = "0987654321")
-        String phone
+        String phone,
+        @Schema(description = "Mã khách hàng liên kết với tài khoản này.", example = "KH001")
+        String customerCode
 ) {
     public static UserDto from(AppUser user) {
         return new UserDto(
@@ -22,7 +24,8 @@ public record UserDto(
                 user.getFullName(),
                 user.getRole().name().toLowerCase(),
                 user.getEmail(),
-                user.getPhone()
+                user.getPhone(),
+                user.getCustomer() != null ? user.getCustomer().getCode() : null
         );
     }
 }

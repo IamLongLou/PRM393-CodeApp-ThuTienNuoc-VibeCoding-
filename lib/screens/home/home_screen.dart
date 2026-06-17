@@ -5,7 +5,11 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../providers/customer_provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/sync_provider.dart';
+import '../../providers/billing_provider.dart';
 import '../../models/customer.dart';
+import '../../models/bill.dart';
+import '../../models/user.dart';
 import '../../routes/app_routes.dart';
 import '../../core/utils/formatter_utils.dart';
 import '../../core/constants/app_strings.dart';
@@ -110,7 +114,7 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text('${FormatterUtils.getGreeting()}, 👋', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text('Chào ${user?.fullName}👋', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                         const Spacer(),
                         _buildWeatherCard(),
                       ],
@@ -118,10 +122,10 @@ class HomeScreen extends StatelessWidget {
                     Text('Hôm nay: $formattedDate', style: const TextStyle(color: Colors.grey, fontSize: 14)),
                     const SizedBox(height: 20),
                     if (user?.role != 'user') _buildReadyBanner(context),
+                    if (user?.role != 'user') _buildReadyBanner(context),
                     const SizedBox(height: 20),
                     if (user?.role == 'staff') _buildStaffStats(context),
-                    if (user?.role == 'admin') _buildAdminStats(context),
-                    if (user?.role == 'user') _buildUserHeader(),
+                    if (user?.role == 'user') _buildUserHeader(context, user),
                     const SizedBox(height: 30),
                     const Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -146,7 +150,7 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildAppBar(BuildContext context, String name, String role) {
-    String roleLabel = role == 'admin' ? 'Quản trị' : (role == 'staff' ? 'Nhân viên' : 'Khách hàng');
+    String roleLabel = role == 'staff' ? 'Nhân viên' : 'Khách hàng';
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: Row(
@@ -212,73 +216,85 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildAdminStats(BuildContext context) {
-    return Row(
-      children: [
-        _buildStatCard(context, '1.2B', 'DOANH THU', Colors.blue, 0),
-        const SizedBox(width: 15),
-        _buildStatCard(context, '98%', 'TỶ LỆ THU', Colors.purple, 1),
-      ],
-    );
-  }
+  Widget _buildUserHeader(BuildContext context, User? user) {
+    if (user == null) return const SizedBox();
 
-  Widget _buildUserHeader() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.blue.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Số dư hiện tại', style: TextStyle(fontSize: 14, color: Colors.black54)),
-          SizedBox(height: 5),
-          Text('452,000 đ', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue)),
-          SizedBox(height: 10),
-          Text('Hạn thanh toán: 30/06/2026', style: TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold)),
-        ],
-      ),
+    return FutureBuilder<List<Bill>>(
+      future: Provider.of<BillingProvider>(context, listen: false).getAllBills(),
+      builder: (context, snapshot) {
+        double totalAmount = 0;
+        String dueDateStr = 'Không có nợ';
+        bool hasDebt = false;
+        
+        if (snapshot.hasData && snapshot.data != null) {
+          final userBills = snapshot.data!.where((b) => b.customerCode == user.customerCode).toList();
+          if (userBills.isNotEmpty) {
+            userBills.sort((a, b) => b.date.compareTo(a.date));
+            
+            // Cộng dồn toàn bộ số tiền cần thanh toán của tất cả hóa đơn
+            totalAmount = userBills.fold(0, (sum, bill) => sum + bill.totalAmount);
+            
+            final latestBill = userBills.first;
+            final dueDate = latestBill.date.add(const Duration(days: 15));
+            dueDateStr = FormatterUtils.formatDate(dueDate, pattern: 'dd/MM/yyyy');
+            hasDebt = true;
+          }
+        }
+
+        final formattedAmount = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(totalAmount);
+
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.blue.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(15),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Số tiền cần thanh toán:', style: TextStyle(fontSize: 14, color: Colors.black54)),
+              const SizedBox(height: 5),
+              Text(formattedAmount, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue)),
+              const SizedBox(height: 10),
+              if (hasDebt) 
+                Text('Hạn thanh toán: $dueDateStr', style: const TextStyle(fontSize: 12, color: Colors.redAccent, fontWeight: FontWeight.bold))
+              else 
+                const Text('Bạn đã thanh toán đầy đủ', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold)),
+            ],
+          ),
+        );
+      },
     );
   }
 
   Widget _buildReadyBanner(BuildContext context) {
-    final provider = Provider.of<CustomerProvider>(context);
-    final String lastSync = provider.lastSyncTime != null 
-        ? DateFormat('HH:mm a').format(provider.lastSyncTime!)
+    final syncProvider = Provider.of<SyncProvider>(context);
+    final lastSyncTime = syncProvider.lastSyncTime;
+    final String lastSync = lastSyncTime != null 
+        ? DateFormat('HH:mm a').format(lastSyncTime)
         : 'Chưa đồng bộ';
-        
-    return InkWell(
-      onTap: () => provider.refresh(),
-      child: Container(
-        padding: const EdgeInsets.all(15),
-        decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(15)),
-        child: Row(
-          children: [
-            Icon(provider.isLoading ? Icons.sync : Icons.check_circle, color: Colors.green),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(provider.isLoading ? 'Đang cập nhật...' : 'Dữ liệu đã sẵn sàng', 
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  Text('Đồng bộ lần cuối: $lastSync', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                ],
-              ),
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(15)),
+      child: Row(
+        children: [
+          const Icon(Icons.check_circle, color: Colors.green),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Dữ liệu đã sẵn sàng', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text('Đồng bộ lần cuối: $lastSync', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white, 
-                borderRadius: BorderRadius.circular(20), 
-                border: Border.all(color: Colors.green)
-              ),
-              child: Text(provider.isLoading ? 'Đang tải' : 'Ổn định', 
-                style: const TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
-            ),
-          ],
-        ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.green)),
+            child: const Text('Ổn định', style: TextStyle(color: Colors.green, fontSize: 11, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -327,14 +343,7 @@ class HomeScreen extends StatelessWidget {
         
         List<Widget> cards = [];
         
-        if (role == 'admin') {
-          cards = [
-            _funcCard(context, 'Quản lý NV', 'Quản lý nhân viên thu tiền', Icons.badge_outlined, Colors.indigo, AppRoutes.settings),
-            _funcCard(context, 'Doanh thu', 'Thống kê tài chính toàn hệ thống', Icons.payments_outlined, Colors.green, AppRoutes.statistics),
-            _funcCard(context, 'Khách hàng', 'Danh sách hộ dân toàn thành phố', Icons.people_outline, Colors.blue, AppRoutes.customerList),
-            _funcCard(context, 'Cấu hình', 'Cài đặt đơn giá & hệ thống', Icons.settings_suggest_outlined, Colors.orange, AppRoutes.settings),
-          ];
-        } else if (role == 'staff') {
+        if (role == 'staff') {
           cards = [
             _funcCard(context, 'Khách hàng', 'Danh sách hộ dân & ghi chỉ số nước', Icons.people_outline, Colors.blue, AppRoutes.customerList, hasBadge: true, badgeValue: '$pendingCount'),
             _funcCard(context, 'Đồng bộ', 'Tải lên kết quả & cập nhật dữ liệu', Icons.sync, Colors.green, AppRoutes.sync),

@@ -22,10 +22,16 @@ class CustomerProvider with ChangeNotifier {
   Future<void> fetch() async {
     _isLoading = true; 
     notifyListeners();
-    _customers = await _db.getAllCustomers();
-    _isLoading = false; 
+
+    // 1. Thử cập nhật từ API nếu có mạng (Back-ground refresh)
+    refreshFromServer();
+
+    // 2. Luôn ưu tiên lấy từ SQLite trước để UI hiện lên ngay
+    _customers = await _repository.getAll();
+    _filteredCustomers = [];
+    
+    _isLoading = false;
     notifyListeners();
-    refresh();
   }
 
   Future<void> refresh() async {
